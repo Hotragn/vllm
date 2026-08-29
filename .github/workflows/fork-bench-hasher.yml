@@ -5,7 +5,7 @@ name: fork-bench-hasher
 # stage of that benchmark directly, which is the only stage the hasher change
 # can affect.
 #
-# The A/B pair is repeated REPEATS times and the per-case median is taken
+# The A/B pair is repeated REPEATS times and the per-case minimum is taken
 # across repeats, so a noisy neighbour on the runner cannot masquerade as a
 # regression. It also counts hasher.update() calls per case, which is the
 # mechanical quantity the framing change actually moves.
@@ -17,7 +17,7 @@ on:
 
 env:
   BENCH_BRANCH: fix/mm-hash-framing
-  REPEATS: "3"
+  REPEATS: "5"
 
 jobs:
   bench:
@@ -87,17 +87,18 @@ jobs:
 
 
           def cases():
-              for px in (336, 512, 1024, 2048):
-                  yield f"image {px}x{px}", dict(image=pil(px, px, px), **KWARGS)
-              yield "video ndarray 32x336x336", dict(video=rgb(2, 32, 336, 336))
+              for px, n in ((336, 512), (512, 256), (1024, 64), (2048, 16)):
+                  yield f"image {px}x{px}", n, dict(image=pil(px, px, px), **KWARGS)
+              yield "video ndarray 32x336x336", 32, dict(video=rgb(2, 32, 336, 336))
               yield (
                   "video 32 PIL frames",
+                  32,
                   dict(video=[pil(3 + i, 336, 336) for i in range(32)]),
               )
-              yield "audio 30s float32", dict(audio=np.zeros(16000 * 30, np.float32))
+              yield "audio 30s float32", 128, dict(audio=np.zeros(16000 * 30, np.float32))
               # No payload, maximal framing overhead per byte hashed: the shape
               # where this change costs the most, in relative terms.
-              yield "kwargs only, 1000 nested ints", dict(
+              yield "kwargs only, 1000 nested ints", 32, dict(
                   nested={str(i): {"a": i, "b": [i, i + 1]} for i in range(1000)}
               )
 
@@ -130,18 +131,17 @@ jobs:
               return calls, nbytes
 
 
-          def bench(kwargs, budget_s=1.0, rounds=7):
+          def bench(kwargs, n, rounds=15):
+              """Report the MINIMUM per-call time over `rounds` batches of `n`.
+
+              `n` is fixed per case rather than auto-calibrated, so both
+              revisions do identical total work. The minimum is used because
+              interference from a noisy neighbour on a shared runner can only
+              ever make a sample slower; the median moves under load, the
+              minimum does not.
+              """
               hash_kwargs = MultiModalHasher.hash_kwargs
               hash_kwargs(ALGO, model_id=MODEL, **kwargs)
-
-              n = 1
-              while True:
-                  t0 = time.perf_counter()
-                  for _ in range(n):
-                      hash_kwargs(ALGO, model_id=MODEL, **kwargs)
-                  if time.perf_counter() - t0 >= budget_s / rounds or n >= 1 << 20:
-                      break
-                  n *= 2
 
               per_call = []
               gc.disable()
@@ -153,12 +153,17 @@ jobs:
                       per_call.append((time.perf_counter_ns() - t0) / n / 1e6)
               finally:
                   gc.enable()
-              return {"ms": statistics.median(per_call), "n": n, "rounds": per_call}
+              return {
+                  "ms": min(per_call),
+                  "median_ms": statistics.median(per_call),
+                  "n": n,
+                  "rounds": per_call,
+              }
 
 
           out = {}
-          for name, kwargs in cases():
-              r = bench(kwargs)
+          for name, n, kwargs in cases():
+              r = bench(kwargs, n)
               r["updates"], r["bytes"] = count_updates(kwargs)
               out[name] = r
               print(
@@ -185,7 +190,7 @@ jobs:
               per = [json.loads(p.read_text()) for p in runs]
               cases = per[0].keys()
               return (
-                  {k: statistics.median(r[k]["ms"] for r in per) for k in cases},
+                  {k: min(r[k]["ms"] for r in per) for k in cases},
                   {k: per[0][k]["updates"] for k in cases},
                   {k: per[0][k]["bytes"] for k in cases},
                   {k: [round(r[k]["ms"], 4) for r in per] for k in cases},
@@ -197,7 +202,7 @@ jobs:
           b, ub, bb, rb, nb = load(branch)
 
           print("")
-          print(f"=========== main vs branch (median of {na}/{nb} A/B repeats) ===========")
+          print(f"=========== main vs branch (min over {na}/{nb} A/B repeats) ===========")
           hdr = f"{'case':30s} {'main ms':>9s} {'branch ms':>10s} {'delta':>8s}"
           hdr += f" {'updates m>b':>13s} {'bytes m>b':>19s}"
           print(hdr)
@@ -208,7 +213,7 @@ jobs:
                   f" {ua[k]:6d} > {ub[k]:4d} {ba[k]:9d} > {bb[k]:9d}"
               )
           print("")
-          print("per-repeat medians (ms), to show run-to-run spread on a shared runner:")
+          print("per-repeat minima (ms), to show run-to-run spread on a shared runner:")
           for k in a:
               print(f"  {k:30s} main {ra[k]}   branch {rb[k]}")
           PY
