@@ -4,6 +4,11 @@ name: fork-bench-hasher
 # `vllm bench mm-processor` needs a GPU; this measures the `get_mm_hashes`
 # stage of that benchmark directly, which is the only stage the hasher change
 # can affect.
+#
+# The A/B pair is repeated REPEATS times and the per-case median is taken
+# across repeats, so a noisy neighbour on the runner cannot masquerade as a
+# regression. It also counts hasher.update() calls per case, which is the
+# mechanical quantity the framing change actually moves.
 
 on:
   push:
@@ -12,6 +17,7 @@ on:
 
 env:
   BENCH_BRANCH: fix/mm-hash-framing
+  REPEATS: "3"
 
 jobs:
   bench:
@@ -63,6 +69,7 @@ jobs:
           import numpy as np
           from PIL import Image
 
+          import vllm.multimodal.hasher as hasher_mod
           from vllm.multimodal.hasher import MultiModalHasher
 
           ALGO = "sha256"
@@ -80,8 +87,8 @@ jobs:
 
 
           def cases():
-              yield "image 336x336", dict(image=pil(0, 336, 336), **KWARGS)
-              yield "image 1024x1024", dict(image=pil(1, 1024, 1024), **KWARGS)
+              for px in (336, 512, 1024, 2048):
+                  yield f"image {px}x{px}", dict(image=pil(px, px, px), **KWARGS)
               yield "video ndarray 32x336x336", dict(video=rgb(2, 32, 336, 336))
               yield (
                   "video 32 PIL frames",
@@ -93,6 +100,34 @@ jobs:
               yield "kwargs only, 1000 nested ints", dict(
                   nested={str(i): {"a": i, "b": [i, i + 1]} for i in range(1000)}
               )
+
+
+          def count_updates(kwargs):
+              """Number of hasher.update() calls and bytes fed, per hash_kwargs call."""
+              calls = 0
+              nbytes = 0
+              real = hasher_mod._get_hasher_factory(ALGO)
+
+              class Counting:
+                  def __init__(self):
+                      self._h = real()
+
+                  def update(self, b):
+                      nonlocal calls, nbytes
+                      calls += 1
+                      nbytes += b.nbytes if isinstance(b, memoryview) else len(b)
+                      self._h.update(b)
+
+                  def hexdigest(self):
+                      return self._h.hexdigest()
+
+              orig = hasher_mod._get_hasher_factory
+              hasher_mod._get_hasher_factory = lambda algo: Counting
+              try:
+                  MultiModalHasher.hash_kwargs(ALGO, model_id=MODEL, **kwargs)
+              finally:
+                  hasher_mod._get_hasher_factory = orig
+              return calls, nbytes
 
 
           def bench(kwargs, budget_s=1.0, rounds=7):
@@ -124,8 +159,13 @@ jobs:
           out = {}
           for name, kwargs in cases():
               r = bench(kwargs)
+              r["updates"], r["bytes"] = count_updates(kwargs)
               out[name] = r
-              print(f"{name:32s} {r['ms']:10.4f} ms/call  (n={r['n']})", flush=True)
+              print(
+                  f"{name:32s} {r['ms']:10.4f} ms/call  "
+                  f"(n={r['n']}, {r['updates']} updates, {r['bytes']} bytes)",
+                  flush=True,
+              )
 
           with open(sys.argv[1], "w") as f:
               json.dump(out, f, indent=2)
@@ -133,20 +173,47 @@ jobs:
           cat > "$RUNNER_TEMP/bench/compare.py" <<'PY'
           import json
           import pathlib
+          import statistics
           import sys
 
           d = pathlib.Path(sys.argv[1])
-          a = json.loads((d / "main.json").read_text())
-          b = json.loads((d / (sys.argv[2].replace("/", "_") + ".json")).read_text())
+          branch = sys.argv[2].replace("/", "_")
+
+
+          def load(tag):
+              runs = sorted(d.glob(f"{tag}.r*.json"))
+              per = [json.loads(p.read_text()) for p in runs]
+              cases = per[0].keys()
+              return (
+                  {k: statistics.median(r[k]["ms"] for r in per) for k in cases},
+                  {k: per[0][k]["updates"] for k in cases},
+                  {k: per[0][k]["bytes"] for k in cases},
+                  {k: [round(r[k]["ms"], 4) for r in per] for k in cases},
+                  len(per),
+              )
+
+
+          a, ua, ba, ra, na = load("main")
+          b, ub, bb, rb, nb = load(branch)
+
           print("")
-          print("=========== main vs branch ===========")
-          print(f"{'case':32s} {'main ms':>10s} {'branch ms':>10s} {'delta':>9s}")
+          print(f"=========== main vs branch (median of {na}/{nb} A/B repeats) ===========")
+          hdr = f"{'case':30s} {'main ms':>9s} {'branch ms':>10s} {'delta':>8s}"
+          hdr += f" {'updates m>b':>13s} {'bytes m>b':>19s}"
+          print(hdr)
           for k in a:
-              m, n = a[k]["ms"], b[k]["ms"]
-              print(f"{k:32s} {m:10.4f} {n:10.4f} {(n / m - 1) * 100:+8.1f}%")
+              m, n = a[k], b[k]
+              print(
+                  f"{k:30s} {m:9.4f} {n:10.4f} {(n / m - 1) * 100:+7.1f}%"
+                  f" {ua[k]:6d} > {ub[k]:4d} {ba[k]:9d} > {bb[k]:9d}"
+              )
+          print("")
+          print("per-repeat medians (ms), to show run-to-run spread on a shared runner:")
+          for k in a:
+              print(f"  {k:30s} main {ra[k]}   branch {rb[k]}")
           PY
 
-      - name: Run on main and on the branch
+      - name: Run interleaved A/B repeats
         run: |
           set -uo pipefail
           source .venv/bin/activate
@@ -154,16 +221,18 @@ jobs:
           OUT="$GITHUB_WORKSPACE/bench.txt"
           : > "$OUT"
 
-          for ref in main "$BENCH_BRANCH"; do
-            git checkout -f -q "origin/$ref"
-            {
-              echo ""
-              echo "=========== $ref ==========="
-              echo "HEAD = $(git rev-parse --short HEAD)  ($(git log -1 --pretty=%s))"
-              echo ""
-            } | tee -a "$OUT"
-            python "$RUNNER_TEMP/bench/bench_hasher.py" \
-              "$RUNNER_TEMP/bench/$(echo "$ref" | tr / _).json" 2>&1 | tee -a "$OUT"
+          for i in $(seq 1 "$REPEATS"); do
+            for ref in main "$BENCH_BRANCH"; do
+              git checkout -f -q "origin/$ref"
+              tag=$(echo "$ref" | tr / _)
+              {
+                echo ""
+                echo "=========== repeat $i :: $ref ==========="
+                echo "HEAD = $(git rev-parse --short HEAD)  ($(git log -1 --pretty=%s))"
+              } | tee -a "$OUT"
+              python "$RUNNER_TEMP/bench/bench_hasher.py" \
+                "$RUNNER_TEMP/bench/$tag.r$i.json" 2>&1 | tee -a "$OUT"
+            done
           done
 
           git checkout -f -q origin/main
