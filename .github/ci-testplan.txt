@@ -9,7 +9,7 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
-fix/pad-after-truncate | tests/renderers/test_completions.py | vllm/renderers/params.py | padding_with_left_truncation_keeps_the_prompt or padding_without_truncation_is_unchanged | tests/renderers
+fix/pad-after-truncate | tests/renderers/test_completions.py | vllm/renderers/params.py | padding_with_left_truncation_keeps_the_prompt or padding_without_truncation_is_unchanged | -
 
 # Already verified and reported upstream:
 # fix/video-base64-validate | tests/multimodal/media/test_video.py | vllm/multimodal/media/video.py | load_base64_rejects_malformed | tests/multimodal/media
