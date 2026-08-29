@@ -1,0 +1,115 @@
+name: fork-test-runner
+
+# Fork-only. vLLM upstream gates its pre-commit workflow behind a `ready`
+# label or 4+ merged PRs, so a first-time contributor has to produce test
+# evidence themselves. Edit .github/ci-testplan.txt and push this branch.
+
+on:
+  push:
+    branches:
+      - ci/test-runner
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost \
+            /usr/local/share/powershell /usr/share/swift || true
+          df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: System deps for the video/audio tests
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install vLLM (precompiled, editable)
+        run: |
+          set -euxo pipefail
+          uv venv --python 3.12
+          source .venv/bin/activate
+          VLLM_USE_PRECOMPILED=1 uv pip install -e . --torch-backend=auto
+          uv pip install pytest pytest-asyncio pytest-timeout pytest-forked tblib \
+            soundfile librosa av
+          python - <<'PY'
+          import torch, vllm, vllm.multimodal.hasher as h
+          print("torch", torch.__version__, "| vllm", vllm.__version__)
+          assert h.__file__.startswith("/home/runner/work/vllm/vllm/"), h.__file__
+          print("editable install tracks the working tree: OK")
+          PY
+
+      - name: Run the plan
+        run: |
+          set -uo pipefail
+          set +e
+          source .venv/bin/activate
+          git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          PLAN=$(git show "$GITHUB_SHA:.github/ci-testplan.txt")
+          OUT="$GITHUB_WORKSPACE/results.txt"
+          : > "$OUT"
+
+          note() { printf '%s\n' "$*" | tee -a "$OUT"; }
+
+          pytest_run() {
+            local label="$1"; shift
+            note ""
+            note "=========== $label ==========="
+            note "\$ python -m pytest $*"
+            note "HEAD = $(git rev-parse --short HEAD)  ($(git log -1 --pretty=%s))"
+            note ""
+            python -m pytest "$@" 2>&1 | tee -a "$OUT"
+            note "(pytest exit ${PIPESTATUS[0]})"
+          }
+
+          while IFS='|' read -r branch testfile srcfile kexpr suite; do
+            branch=$(echo "$branch" | xargs); [ -z "$branch" ] && continue
+            case "$branch" in \#*) continue ;; esac
+            testfile=$(echo "$testfile" | xargs)
+            srcfile=$(echo "$srcfile" | xargs)
+            kexpr=$(echo "$kexpr" | sed 's/^ *//;s/ *$//')
+            suite=$(echo "$suite" | xargs)
+
+            note ""
+            note "##################################################################"
+            note "## $branch"
+            note "##################################################################"
+
+            git checkout -f -q origin/main
+            git checkout -q "origin/$branch" -- "$testfile"
+            note "BEFORE: the branch's tests against $srcfile from main"
+            pytest_run "BEFORE  $branch" -v "$testfile" -k "$kexpr"
+
+            git checkout -f -q "origin/$branch"
+            note "AFTER: full branch checkout"
+            pytest_run "AFTER   $branch" -v "$testfile"
+
+            [ "$suite" = "-" ] && continue
+            for ref in main "$branch"; do
+              git checkout -f -q "origin/$ref"
+              note ""
+              note "=========== SUITE $ref :: pytest -m cpu_test $suite ==========="
+              python -m pytest -m cpu_test "$suite" --tb=no -q 2>&1 \
+                | grep -E '^(FAILED|ERROR)|passed|failed' | tee -a "$OUT"
+            done
+          done <<< "$PLAN"
+
+          git checkout -f -q origin/main
+          exit 0
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results
+          path: results.txt
+          if-no-files-found: warn
