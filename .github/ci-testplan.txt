@@ -9,5 +9,8 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
-fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal
-fix/encoder-cache-repeated-item | tests/v1/core/test_encoder_cache_manager.py | vllm/v1/core/encoder_cache_manager.py | duplicate_mm_hash_stays_referenced_until_last_free or duplicate_mm_hash_is_not_evicted_before_last_use | tests/v1/core
+fix/video-base64-validate | tests/multimodal/media/test_video.py | vllm/multimodal/media/video.py | load_base64_rejects_malformed | tests/multimodal/media
+
+# Already verified and reported upstream:
+# fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal
+# fix/encoder-cache-repeated-item | tests/v1/core/test_encoder_cache_manager.py | vllm/v1/core/encoder_cache_manager.py | duplicate_mm_hash_stays_referenced_until_last_free or duplicate_mm_hash_is_not_evicted_before_last_use | tests/v1/core
