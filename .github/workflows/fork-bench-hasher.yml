@@ -1,0 +1,179 @@
+name: fork-bench-hasher
+
+# Fork-only. Microbenchmarks MultiModalHasher.hash_kwargs on main vs a branch.
+# `vllm bench mm-processor` needs a GPU; this measures the `get_mm_hashes`
+# stage of that benchmark directly, which is the only stage the hasher change
+# can affect.
+
+on:
+  push:
+    branches:
+      - ci/test-runner
+
+env:
+  BENCH_BRANCH: fix/mm-hash-framing
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost \
+            /usr/local/share/powershell /usr/share/swift || true
+          df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install vLLM (precompiled, editable)
+        run: |
+          set -euxo pipefail
+          uv venv --python 3.12
+          source .venv/bin/activate
+          VLLM_USE_PRECOMPILED=1 uv pip install -e . --torch-backend=auto
+          python - <<'PY'
+          import vllm.multimodal.hasher as h
+          assert h.__file__.startswith("/home/runner/work/vllm/vllm/"), h.__file__
+          print("editable install tracks the working tree: OK")
+          PY
+
+      - name: Write the benchmark
+        run: |
+          mkdir -p "$RUNNER_TEMP/bench"
+          cat > "$RUNNER_TEMP/bench/bench_hasher.py" <<'PY'
+          """Time MultiModalHasher.hash_kwargs on payloads shaped like real
+          multi-modal requests. This is the `get_mm_hashes` stage of
+          `vllm bench mm-processor` in isolation."""
+
+          import gc
+          import json
+          import statistics
+          import sys
+          import time
+
+          import numpy as np
+          from PIL import Image
+
+          from vllm.multimodal.hasher import MultiModalHasher
+
+          ALGO = "sha256"
+          MODEL = "Qwen/Qwen2-VL-7B-Instruct"
+          KWARGS = {"min_pixels": 3136, "max_pixels": 12845056}
+
+
+          def rgb(seed, n, h, w):
+              rng = np.random.default_rng(seed)
+              return rng.integers(0, 256, (n, h, w, 3), dtype=np.uint8)
+
+
+          def pil(seed, h, w):
+              return Image.fromarray(rgb(seed, 1, h, w)[0])
+
+
+          def cases():
+              yield "image 336x336", dict(image=pil(0, 336, 336), **KWARGS)
+              yield "image 1024x1024", dict(image=pil(1, 1024, 1024), **KWARGS)
+              yield "video ndarray 32x336x336", dict(video=rgb(2, 32, 336, 336))
+              yield (
+                  "video 32 PIL frames",
+                  dict(video=[pil(3 + i, 336, 336) for i in range(32)]),
+              )
+              yield "audio 30s float32", dict(audio=np.zeros(16000 * 30, np.float32))
+              # No payload, maximal framing overhead per byte hashed: the shape
+              # where this change costs the most, in relative terms.
+              yield "kwargs only, 1000 nested ints", dict(
+                  nested={str(i): {"a": i, "b": [i, i + 1]} for i in range(1000)}
+              )
+
+
+          def bench(kwargs, budget_s=1.0, rounds=7):
+              hash_kwargs = MultiModalHasher.hash_kwargs
+              hash_kwargs(ALGO, model_id=MODEL, **kwargs)
+
+              n = 1
+              while True:
+                  t0 = time.perf_counter()
+                  for _ in range(n):
+                      hash_kwargs(ALGO, model_id=MODEL, **kwargs)
+                  if time.perf_counter() - t0 >= budget_s / rounds or n >= 1 << 20:
+                      break
+                  n *= 2
+
+              per_call = []
+              gc.disable()
+              try:
+                  for _ in range(rounds):
+                      t0 = time.perf_counter_ns()
+                      for _ in range(n):
+                          hash_kwargs(ALGO, model_id=MODEL, **kwargs)
+                      per_call.append((time.perf_counter_ns() - t0) / n / 1e6)
+              finally:
+                  gc.enable()
+              return {"ms": statistics.median(per_call), "n": n, "rounds": per_call}
+
+
+          out = {}
+          for name, kwargs in cases():
+              r = bench(kwargs)
+              out[name] = r
+              print(f"{name:32s} {r['ms']:10.4f} ms/call  (n={r['n']})", flush=True)
+
+          with open(sys.argv[1], "w") as f:
+              json.dump(out, f, indent=2)
+          PY
+          cat > "$RUNNER_TEMP/bench/compare.py" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          d = pathlib.Path(sys.argv[1])
+          a = json.loads((d / "main.json").read_text())
+          b = json.loads((d / (sys.argv[2].replace("/", "_") + ".json")).read_text())
+          print("")
+          print("=========== main vs branch ===========")
+          print(f"{'case':32s} {'main ms':>10s} {'branch ms':>10s} {'delta':>9s}")
+          for k in a:
+              m, n = a[k]["ms"], b[k]["ms"]
+              print(f"{k:32s} {m:10.4f} {n:10.4f} {(n / m - 1) * 100:+8.1f}%")
+          PY
+
+      - name: Run on main and on the branch
+        run: |
+          set -uo pipefail
+          source .venv/bin/activate
+          git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          OUT="$GITHUB_WORKSPACE/bench.txt"
+          : > "$OUT"
+
+          for ref in main "$BENCH_BRANCH"; do
+            git checkout -f -q "origin/$ref"
+            {
+              echo ""
+              echo "=========== $ref ==========="
+              echo "HEAD = $(git rev-parse --short HEAD)  ($(git log -1 --pretty=%s))"
+              echo ""
+            } | tee -a "$OUT"
+            python "$RUNNER_TEMP/bench/bench_hasher.py" \
+              "$RUNNER_TEMP/bench/$(echo "$ref" | tr / _).json" 2>&1 | tee -a "$OUT"
+          done
+
+          git checkout -f -q origin/main
+          python "$RUNNER_TEMP/bench/compare.py" \
+            "$RUNNER_TEMP/bench" "$BENCH_BRANCH" 2>&1 | tee -a "$OUT"
+          exit 0
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench
+          path: bench.txt
+          if-no-files-found: warn
