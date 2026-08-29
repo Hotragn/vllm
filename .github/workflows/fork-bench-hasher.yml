@@ -186,7 +186,8 @@ jobs:
 
 
           def load(tag):
-              runs = sorted(d.glob(f"{tag}.r*.json"))
+              # r0 is the warmup repeat; discard it.
+              runs = sorted(p for p in d.glob(f"{tag}.r*.json") if ".r0." not in p.name)
               per = [json.loads(p.read_text()) for p in runs]
               cases = per[0].keys()
               return (
@@ -225,10 +226,28 @@ jobs:
           git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
           OUT="$GITHUB_WORKSPACE/bench.txt"
           : > "$OUT"
+          BASE_SHA=$(git merge-base origin/main "origin/$BENCH_BRANCH")
+          echo "baseline (merge-base) = $BASE_SHA" | tee -a "$OUT"
 
-          for i in $(seq 1 "$REPEATS"); do
-            for ref in main "$BENCH_BRANCH"; do
-              git checkout -f -q "origin/$ref"
+          # Repeat 1 is discarded as warmup: this runner is measurably faster
+          # on its first workload than on every subsequent one, and whichever
+          # revision holds that slot wins by ~40%. The order also alternates,
+          # so no revision keeps a systematically better position.
+          for i in $(seq 0 "$REPEATS"); do
+            if [ $((i % 2)) -eq 0 ]; then
+              order="main $BENCH_BRANCH"
+            else
+              order="$BENCH_BRANCH main"
+            fi
+            for ref in $order; do
+              # Baseline is the branch's merge-base, not current main, so the
+              # only difference between the two sides is the branch's own diff.
+              if [ "$ref" = "main" ]; then
+                target="$BASE_SHA"
+              else
+                target="origin/$ref"
+              fi
+              git checkout -f -q "$target"
               tag=$(echo "$ref" | tr / _)
               {
                 echo ""

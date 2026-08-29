@@ -9,6 +9,8 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
+fix/pad-after-truncate | tests/renderers/test_completions.py | vllm/renderers/params.py | padding_with_left_truncation_keeps_the_prompt or padding_without_truncation_is_unchanged | tests/renderers
+
 # Already verified and reported upstream:
 # fix/video-base64-validate | tests/multimodal/media/test_video.py | vllm/multimodal/media/video.py | load_base64_rejects_malformed | tests/multimodal/media
 # fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal
