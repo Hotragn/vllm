@@ -72,22 +72,24 @@ jobs:
             note "(pytest exit ${PIPESTATUS[0]})"
           }
 
-          while IFS='|' read -r branch testfile srcfile kexpr suite; do
+          while IFS='|' read -r branch testfile srcfile kexpr suite base; do
             branch=$(echo "$branch" | xargs); [ -z "$branch" ] && continue
             case "$branch" in \#*) continue ;; esac
             testfile=$(echo "$testfile" | xargs)
             srcfile=$(echo "$srcfile" | xargs)
             kexpr=$(echo "$kexpr" | sed 's/^ *//;s/ *$//')
             suite=$(echo "$suite" | xargs)
+            base=$(echo "${base:-}" | xargs)
+            [ -z "$base" ] && base="main"
 
             note ""
             note "##################################################################"
             note "## $branch"
             note "##################################################################"
 
-            git checkout -f -q origin/main
+            git checkout -f -q "origin/$base"
             git checkout -q "origin/$branch" -- "$testfile"
-            note "BEFORE: the branch's tests against $srcfile from main"
+            note "BEFORE: the branch's tests against $srcfile from $base"
             pytest_run "BEFORE  $branch" -v "$testfile" -k "$kexpr"
 
             git checkout -f -q "origin/$branch"

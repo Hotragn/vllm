@@ -1,7 +1,7 @@
 # Test plan for .github/workflows/fork-test-runner.yml (fork-only; never merged upstream).
 # One row per change under review. Pipe-separated, blank lines and # comments ignored.
 #
-#   branch | test file | source file | -k expression selecting the new tests | suite dir ("-" to skip)
+#   branch | test file | source file | -k expression | suite dir ("-") | base ref (default main)
 #
 # The runner checks out <branch>'s test file on top of main and runs the -k
 # selection (expected red), then checks out the branch and runs the whole file
@@ -9,7 +9,8 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
-fix/truncate-token-offsets | tests/renderers/test_token_offsets.py | vllm/renderers/params.py | explicit_truncation_side_truncates_offsets | tests/renderers
+fix/truncate-token-offsets | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | truncated_token_offsets | -
+fix/pad-after-truncate | tests/entrypoints/pooling/scoring/test_io_processor_unit.py | vllm/entrypoints/pooling/scoring/io_processor.py | token_type_ids_stay_aligned_with_a_truncated_padded_prompt | - | fix/pad-after-truncate~1
 
 # Already verified and reported upstream:
 # fix/pad-after-truncate | tests/renderers/test_completions.py | vllm/renderers/params.py | padding_with_left_truncation_keeps_the_prompt or padding_without_truncation_is_unchanged | -
