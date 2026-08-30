@@ -98,8 +98,8 @@ jobs:
             for ref in main "$branch"; do
               git checkout -f -q "origin/$ref"
               note ""
-              note "=========== SUITE $ref :: pytest -m cpu_test $suite ==========="
-              python -m pytest -m cpu_test "$suite" --tb=no -q 2>&1 \
+              note "=========== SUITE $ref :: pytest $suite ==========="
+              python -m pytest "$suite" --timeout=300 --tb=no -q 2>&1 \
                 | grep -E '^(FAILED|ERROR)|passed|failed' | tee -a "$OUT"
             done
           done <<< "$PLAN"
