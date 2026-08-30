@@ -41,7 +41,7 @@ jobs:
           source .venv/bin/activate
           VLLM_USE_PRECOMPILED=1 uv pip install -e . --torch-backend=auto
           uv pip install pytest pytest-asyncio pytest-timeout pytest-forked tblib \
-            soundfile librosa av
+            soundfile librosa av httpx openai anthropic cloudpickle requests
           python - <<'PY'
           import torch, vllm, vllm.multimodal.hasher as h
           print("torch", torch.__version__, "| vllm", vllm.__version__)
