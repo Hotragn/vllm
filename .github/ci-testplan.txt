@@ -9,11 +9,12 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
-# PR 54539: re-verify after collapsing the per-key blocks into one loop.
-fix/truncate-assistant-tokens-mask | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | assistant_tokens_mask_follows_truncation | -
+# PR 54527: widened to every model that reads the kwargs. Two model families.
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak | -
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_token_count | -
 
-# Verified, PR 54527 open:
-# fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak | -
+# Verified, PR 54539 open:
+# fix/truncate-assistant-tokens-mask | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | assistant_tokens_mask_follows_truncation | -
 
 # Verified and reported upstream (PR 54548):
 # fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
