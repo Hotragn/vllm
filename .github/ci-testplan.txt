@@ -9,7 +9,10 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
-fix/truncate-prompt-is-token-ids | tests/renderers/test_chat_utils_prompt_embeds.py | vllm/renderers/params.py | truncation_keeps_the_mixed_mask | tests/renderers
+fix/truncate-assistant-tokens-mask | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | assistant_tokens_mask_follows_truncation | -
+
+# Verified and reported upstream (PR 54509):
+# fix/truncate-prompt-is-token-ids | tests/renderers/test_chat_utils_prompt_embeds.py | vllm/renderers/params.py | truncation_keeps_the_mixed_mask | tests/renderers
 
 # Already verified and reported upstream:
 # fix/truncate-token-offsets | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | truncated_token_offsets | -
