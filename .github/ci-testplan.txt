@@ -9,10 +9,11 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
-fix/truncate-token-offsets | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | truncated_token_offsets | -
-fix/pad-after-truncate | tests/entrypoints/pooling/scoring/test_io_processor_unit.py | vllm/entrypoints/pooling/scoring/io_processor.py | token_type_ids_stay_aligned_with_a_truncated_padded_prompt | - | fix/pad-after-truncate~1
+fix/truncate-prompt-is-token-ids | tests/renderers/test_chat_utils_prompt_embeds.py | vllm/renderers/params.py | truncation_keeps_the_mixed_mask | tests/renderers
 
 # Already verified and reported upstream:
+# fix/truncate-token-offsets | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | truncated_token_offsets | -
+# fix/pad-after-truncate | tests/entrypoints/pooling/scoring/test_io_processor_unit.py | vllm/entrypoints/pooling/scoring/io_processor.py | token_type_ids_stay_aligned_with_a_truncated_padded_prompt | - | fix/pad-after-truncate~1
 # fix/pad-after-truncate | tests/renderers/test_completions.py | vllm/renderers/params.py | padding_with_left_truncation_keeps_the_prompt or padding_without_truncation_is_unchanged | -
 # fix/pad-after-truncate | tests/entrypoints/pooling/scoring/test_io_processor_unit.py | vllm/entrypoints/pooling/scoring/io_processor.py | token_type_ids_stay_aligned_with_a_truncated_padded_prompt | -
 # fix/video-base64-validate | tests/multimodal/media/test_video.py | vllm/multimodal/media/video.py | load_base64_rejects_malformed | tests/multimodal/media
