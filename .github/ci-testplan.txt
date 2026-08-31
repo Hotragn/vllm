@@ -9,7 +9,10 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
-fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak | -
+fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | is_embed | tests/entrypoints/scale_out/token_in_token_out
+
+# Verified, PR 54527 open:
+# fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak | -
 
 # Verified, PR pending on 54509 merging:
 # fix/truncate-assistant-tokens-mask | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | assistant_tokens_mask_follows_truncation | -
