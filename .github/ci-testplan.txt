@@ -25,6 +25,11 @@ fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_
 # Verified, PR 54539 open:
 # fix/truncate-assistant-tokens-mask | tests/entrypoints/scale_out/render/test_render.py | vllm/renderers/params.py | assistant_tokens_mask_follows_truncation | -
 
+# ACTIVE, PR 54548 -- re-verify after the rebase onto main: upstream moved
+# _extract_mm_features into token_in_token_out/mm_features.py, so the fix and
+# the rebuild helper moved with it.
+fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
+
 # Verified and reported upstream (PR 54548):
 # fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
 
