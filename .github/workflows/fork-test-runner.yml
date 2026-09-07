@@ -87,7 +87,15 @@ jobs:
             note "## $branch"
             note "##################################################################"
 
-            git checkout -f -q "origin/$base"
+            # "$base" may be a branch, a branch-relative rev (branch~1) or a
+            # raw SHA. Try it as a remote ref first, then verbatim. Never let
+            # this fail silently: a stale tree makes BEFORE measure the wrong
+            # revision and the whole comparison is worthless.
+            if ! git checkout -f -q "origin/$base" 2>/dev/null                && ! git checkout -f -q "$base" 2>/dev/null; then
+              note "FATAL: base ref '$base' does not resolve; skipping $branch"
+              continue
+            fi
+            note "base '$base' resolved to $(git rev-parse --short HEAD)"
             git checkout -q "origin/$branch" -- "$testfile"
             note "BEFORE: the branch's tests against $srcfile from $base"
             pytest_run "BEFORE  $branch" -v "$testfile" -k "$kexpr"

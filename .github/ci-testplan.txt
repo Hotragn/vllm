@@ -3,6 +3,10 @@
 #
 #   branch | test file | source file | -k expression | suite dir ("-") | base ref (default main)
 #
+# The base ref is resolved as origin/<base> first, then verbatim. Prefer a
+# branch-relative rev such as <branch>~2 over a raw SHA. Before 2026-09-07 a
+# raw SHA silently failed to check out and BEFORE ran against main instead.
+#
 # The runner checks out <branch>'s test file on top of main and runs the -k
 # selection (expected red), then checks out the branch and runs the whole file
 # (expected green). If a suite dir is given it runs `pytest -m cpu_test <dir>`
@@ -13,7 +17,7 @@
 # the shared size upper bound that the video budget and dummy data also read.
 # BEFORE runs against a0c5180d8c (the previous branch head), not main: modality
 # scoping does not exist on main at all.
-fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing/test_glm4_1v.py | a0c5180d8c
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing/test_glm4_1v.py | fix/modality-scoped-mm-kwargs-vl~2
 
 # Verified (run 34000087312), PR 54527 open -- per-request mm_processor_kwargs:
 # fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | request_mm_processor_kwargs_reach_the_token_count | tests/models/multimodal/processing/test_transformers_image.py | 6e70a6a25c
