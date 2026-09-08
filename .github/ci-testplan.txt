@@ -17,6 +17,9 @@
 # the shared size upper bound that the video budget and dummy data also read.
 # BEFORE runs against a0c5180d8c (the previous branch head), not main: modality
 # scoping does not exist on main at all.
+# Verified (run 34091035237): BEFORE ((700, 700), 95) == ((2184, 2184), 24).
+# Re-running post-rebase onto 869f78732b (the branch was rebased 2026-09-07 to
+# drop 8 unrelated upstream files that a stray commit had swept in).
 fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing/test_glm4_1v.py | fix/modality-scoped-mm-kwargs-vl~2
 
 # Verified (run 34000087312), PR 54527 open -- per-request mm_processor_kwargs:
@@ -33,6 +36,11 @@ fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_
 # _extract_mm_features into token_in_token_out/mm_features.py, so the fix and
 # the rebuild helper moved with it.
 fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
+
+# ACTIVE, PR 54548 -- CodeRabbit round 1: a client-supplied is_embed shorter than
+# the span must be rejected. BEFORE runs against the previous branch head, where
+# is_embed exists but is unvalidated.
+fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | placeholder_rejects_a_mask_shorter_than_the_span | - | fix/render-features-is-embed~1
 
 # Verified and reported upstream (PR 54548):
 # fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
