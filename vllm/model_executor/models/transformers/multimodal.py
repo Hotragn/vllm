@@ -618,12 +618,13 @@ class LegacyMultiModalProcessor(_MultiModalProcessorBase):
             # transforms outputs to `MultiModalKwargs` which is not going to
             # work for Transformers. The vision path has logic tied to
             # `mm_tokens_per_modality` in _apply_vision()
-            # HF processors only accept text, and the decoded string already
-            # contains any special tokens, so don't let them be added again
-            # (the HF processor call disables `add_special_tokens`). It stays out
-            # of `hf_processor_mm_kwargs` because that dict also reaches the sizing
-            # helpers, which read every kwarg as an image processor override.
-            call_mm_kwargs = {**hf_processor_mm_kwargs, "add_special_tokens": False}
+            hf_processor_mm_kwargs = {
+                **hf_processor_mm_kwargs,
+                # HF processors only accept text, and the decoded string already
+                # contains any special tokens, so don't let them be added again
+                # (the HF processor call disables `add_special_tokens`).
+                "add_special_tokens": False,
+            }
 
             valid_mm_items = mm_items.select(
                 {k for k, c in mm_items.get_all_counts().items() if c > 0}
@@ -637,9 +638,9 @@ class LegacyMultiModalProcessor(_MultiModalProcessorBase):
 
             try:
                 processed_data = self.info.ctx.call_hf_processor(
-                    self.info.get_hf_processor(**call_mm_kwargs),
+                    self.info.get_hf_processor(**hf_processor_mm_kwargs),
                     dict(text=prompt_text, **processor_data),
-                    call_mm_kwargs,
+                    hf_processor_mm_kwargs,
                 )
             except ValueError:
                 if any(processor_data.values()):
@@ -651,7 +652,7 @@ class LegacyMultiModalProcessor(_MultiModalProcessorBase):
                     dict(input_ids=[prompt_ids]), tensor_type="pt"
                 )
             self._unpad_images(processed_data)
-            self._unpad_audios(processed_data, processor_data, call_mm_kwargs)
+            self._unpad_audios(processed_data, processor_data, hf_processor_mm_kwargs)
             processed_data.update(passthrough_data)
 
             input_ids = processed_data.pop("input_ids")
