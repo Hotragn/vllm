@@ -24,6 +24,8 @@
 # fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing/test_glm4_1v.py | fix/modality-scoped-mm-kwargs-vl~2
 
 # Verified (run 34000087312), PR 54527 open -- per-request mm_processor_kwargs:
+# # Verified (run 34296534379): BEFORE 5 failed / 3 passed, 4 of them real
+# Idefics3 processor failures; AFTER 3 failed (gated repo 401s) / 20 passed.
 # fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | request_mm_processor_kwargs_reach_the_token_count | tests/models/multimodal/processing/test_transformers_image.py | 6e70a6a25c
 
 # Verified, PR 54527 open (widened to 12 models; two model families covered):
