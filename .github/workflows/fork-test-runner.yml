@@ -55,8 +55,13 @@ jobs:
           set +e
           source .venv/bin/activate
           git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          # `trim` below strips the CR that CRLF plan lines carry.
           PLAN=$(git show "$GITHUB_SHA:.github/ci-testplan.txt")
           OUT="$GITHUB_WORKSPACE/results.txt"
+
+          # Pure-bash whitespace trim. `xargs` treats quotes as syntax and
+          # fails on any field or comment line holding an apostrophe.
+          trim() { local v="$1"; v="${v#"${v%%[![:space:]]*}"}"; printf '%s' "${v%"${v##*[![:space:]]}"}"; }
           : > "$OUT"
 
           note() { printf '%s\n' "$*" | tee -a "$OUT"; }
@@ -73,13 +78,13 @@ jobs:
           }
 
           while IFS='|' read -r branch testfile srcfile kexpr suite base; do
-            branch=$(echo "$branch" | xargs); [ -z "$branch" ] && continue
+            branch=$(trim "$branch"); [ -z "$branch" ] && continue
             case "$branch" in \#*) continue ;; esac
-            testfile=$(echo "$testfile" | xargs)
-            srcfile=$(echo "$srcfile" | xargs)
-            kexpr=$(echo "$kexpr" | sed 's/^ *//;s/ *$//')
-            suite=$(echo "$suite" | xargs)
-            base=$(echo "${base:-}" | xargs)
+            testfile=$(trim "$testfile")
+            srcfile=$(trim "$srcfile")
+            kexpr=$(trim "$kexpr")
+            suite=$(trim "$suite")
+            base=$(trim "${base:-}")
             [ -z "$base" ] && base="main"
 
             note ""
