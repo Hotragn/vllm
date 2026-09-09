@@ -20,7 +20,8 @@
 # Verified (run 34091035237): BEFORE ((700, 700), 95) == ((2184, 2184), 24).
 # Re-running post-rebase onto 869f78732b (the branch was rebased 2026-09-07 to
 # drop 8 unrelated upstream files that a stray commit had swept in).
-fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing/test_glm4_1v.py | fix/modality-scoped-mm-kwargs-vl~2
+# Verified (run 34183531905), PR 54527 open:
+# fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing/test_glm4_1v.py | fix/modality-scoped-mm-kwargs-vl~2
 
 # Verified (run 34000087312), PR 54527 open -- per-request mm_processor_kwargs:
 # fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | request_mm_processor_kwargs_reach_the_token_count | tests/models/multimodal/processing/test_transformers_image.py | 6e70a6a25c
@@ -35,12 +36,14 @@ fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_
 # ACTIVE, PR 54548 -- re-verify after the rebase onto main: upstream moved
 # _extract_mm_features into token_in_token_out/mm_features.py, so the fix and
 # the rebuild helper moved with it.
-fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
+# Verified (run 34183531905), PR 54548 open:
+# fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
 
 # ACTIVE, PR 54548 -- CodeRabbit round 1: a client-supplied is_embed shorter than
 # the span must be rejected. BEFORE runs against the previous branch head, where
 # is_embed exists but is unvalidated.
-fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | placeholder_rejects_a_mask_shorter_than_the_span | - | fix/render-features-is-embed~1
+# Verified (run 34183531905), PR 54548 open:
+# fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | placeholder_rejects_a_mask_shorter_than_the_span | - | fix/render-features-is-embed~1
 
 # Verified and reported upstream (PR 54548):
 # fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
@@ -56,3 +59,10 @@ fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/te
 # fix/video-base64-validate | tests/multimodal/media/test_video.py | vllm/multimodal/media/video.py | load_base64_rejects_malformed | tests/multimodal/media
 # fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal
 # fix/encoder-cache-repeated-item | tests/v1/core/test_encoder_cache_manager.py | vllm/v1/core/encoder_cache_manager.py | duplicate_mm_hash_stays_referenced_until_last_free or duplicate_mm_hash_is_not_evicted_before_last_use | tests/v1/core
+
+# ACTIVE, PR 54527 -- DarkLight1337 asked whether the `call_mm_kwargs` hunk in
+# LegacyMultiModalProcessor.apply() is only a variable rename. BEFORE runs
+# against probe/call-mm-kwargs-shadow, which is this branch's head with ONLY
+# that hunk reverted (main's rebind of the parameter name restored) -- so a red
+# BEFORE here isolates exactly what the rename buys.
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | tokens_structuring_an_image_are_masked_not_dropped or nested_image_fields_split_per_image or spliced_prompt_matches_hf_expansion or repeated_image_hits_the_processor_cache | - | probe/call-mm-kwargs-shadow
