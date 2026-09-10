@@ -67,4 +67,12 @@
 # against probe/call-mm-kwargs-shadow, which is this branch's head with ONLY
 # that hunk reverted (main's rebind of the parameter name restored) -- so a red
 # BEFORE here isolates exactly what the rename buys.
-fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | tokens_structuring_an_image_are_masked_not_dropped or nested_image_fields_split_per_image or spliced_prompt_matches_hf_expansion or repeated_image_hits_the_processor_cache | - | probe/call-mm-kwargs-shadow
+# Verified (run 34296534379): BEFORE 5 failed / 3 passed.
+# fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | tokens_structuring_an_image_are_masked_not_dropped or nested_image_fields_split_per_image or spliced_prompt_matches_hf_expansion or repeated_image_hits_the_processor_cache | - | probe/call-mm-kwargs-shadow
+
+# ACTIVE, PR 54527 -- upstream pre-commit mypy caught that Glm5NextProcessingInfo
+# overrides _get_image_max_pixels without the new modality parameter while
+# inheriting get_image_size_with_most_features, which now passes modality=None.
+# BEFORE runs against the previous branch head (40d876a492), where the base has
+# the parameter and the subclass does not -- so BEFORE is the TypeError itself.
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/models/glm5next/nvidia/multimodal.py | subclasses_keep_the_modality_parameter | tests/models/multimodal/processing/test_glm4_1v.py | fix/modality-scoped-mm-kwargs-vl~1
