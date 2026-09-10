@@ -3,9 +3,11 @@
 #
 #   branch | test file | source file | -k expression | suite dir ("-") | base ref (default main)
 #
-# The base ref is resolved as origin/<base> first, then verbatim. Prefer a
-# branch-relative rev such as <branch>~2 over a raw SHA. Before 2026-09-07 a
-# raw SHA silently failed to check out and BEFORE ran against main instead.
+# The base ref is resolved as origin/<base> first, then verbatim.
+# PREFER A RAW SHA. A branch-relative rev such as <branch>~2 is unsafe on a
+# branch mergify can update: on 2026-09-10 it merged main into an approved PR
+# branch, so <branch>~1 became the fix under test and BEFORE passed. Always
+# check the 'HEAD = <sha> (<subject>)' line the runner prints for BEFORE.
 #
 # The runner checks out <branch>'s test file on top of main and runs the -k
 # selection (expected red), then checks out the branch and runs the whole file
@@ -75,4 +77,4 @@
 # inheriting get_image_size_with_most_features, which now passes modality=None.
 # BEFORE runs against the previous branch head (40d876a492), where the base has
 # the parameter and the subclass does not -- so BEFORE is the TypeError itself.
-fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/models/glm5next/nvidia/multimodal.py | subclasses_keep_the_modality_parameter | tests/models/multimodal/processing/test_glm4_1v.py | fix/modality-scoped-mm-kwargs-vl~1
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/models/glm5next/nvidia/multimodal.py | subclasses_keep_the_modality_parameter | tests/models/multimodal/processing/test_glm4_1v.py | 40d876a49257897fc5dcea6a2632f4d19727825c
