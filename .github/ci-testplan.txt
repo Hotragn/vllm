@@ -80,3 +80,10 @@
 # BEFORE runs against the previous branch head (40d876a492), where the base has
 # the parameter and the subclass does not -- so BEFORE is the TypeError itself.
 # fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/models/glm5next/nvidia/multimodal.py | subclasses_keep_the_modality_parameter | tests/models/multimodal/processing/test_glm4_1v.py | 40d876a49257897fc5dcea6a2632f4d19727825c
+
+# ACTIVE, PR 54323 -- 14-day bump: fresh verification against current main after
+# rebasing and correcting the test docstring (it still claimed a 500, which the
+# PR body had already retracted). Sentinel is the assert_never_reached loader:
+# BEFORE proves the corrupted stream reaches the decoder, not merely that some
+# exception is raised.
+fix/video-base64-validate | tests/multimodal/media/test_video.py | vllm/multimodal/media/video.py | test_load_base64_rejects_malformed | tests/multimodal/media | main
