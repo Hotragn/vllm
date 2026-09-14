@@ -19,7 +19,16 @@
 # upstream had changed both hasher.py (#53675) and get_mm_hashes itself
 # (#54241 media_io_kwargs, #54918 modality scoping), so re-verify that the
 # collisions still exist on current main after merging it in.
-fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
+# VERIFIED (run 34873264781) on 0d949f8e5c: BEFORE 6 failed / 1 passed with
+# byte-identical digests; AFTER 25 passed. Suite tests/multimodal: main 23f/547p
+# vs branch 23f/554p, the 23 identical on both sides (uninspectable models).
+# fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
+
+# ACTIVE 2026-09-14, PR 54283 -- the reachability row. #54918 nested the request's
+# processor kwargs under a fixed `mm_processor_kwargs` key, so assert the collision
+# shapes through ProcessorInputs.get_mm_hashes, not just on the hasher. Both
+# ProcessorInputs and random_image exist on main, so this file is valid for BEFORE.
+fix/mm-hash-framing | tests/multimodal/test_processing.py | vllm/multimodal/hasher.py | test_processor_inputs_hashes_distinguish_kwargs_shapes | - | main
 
 # ACTIVE 2026-09-14 -- post-merge re-verification. Both PRs had drifted far
 # behind main (54527 by 51 commits, 54548 by 343) and Mergify cannot update a
