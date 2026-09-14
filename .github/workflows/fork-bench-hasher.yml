@@ -10,10 +10,11 @@ name: fork-bench-hasher
 # regression. It also counts hasher.update() calls per case, which is the
 # mechanical quantity the framing change actually moves.
 
+# RETIRED 2026-09-14: DarkLight1337 rejected this microbenchmark as not
+# representative of real serving. Superseded by fork-bench-mm-stages.yml,
+# which times the real preprocessing pipeline. Manual trigger only.
 on:
-  push:
-    branches:
-      - ci/test-runner
+  workflow_dispatch:
 
 env:
   BENCH_BRANCH: fix/mm-hash-framing

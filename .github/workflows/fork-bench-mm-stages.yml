@@ -1,0 +1,113 @@
+name: fork-bench-mm-stages
+
+# Fork-only. Measures the per-stage cost of the real multi-modal preprocessing
+# pipeline on CPU, main vs a branch, using vLLM's own TimingContext -- the same
+# stages `vllm bench mm-processor` reports. Only `encoder_forward_secs` needs a
+# GPU; every preprocessing stage runs on CPU, so the hashing stage's share of
+# preprocessing is measurable here.
+#
+# The A/B order alternates and repeat 0 is discarded, because this runner is
+# measurably faster on its first workload.
+
+on:
+  push:
+    branches:
+      - ci/test-runner
+
+env:
+  BENCH_BRANCH: fix/mm-hash-framing
+  REPEATS: "3"
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost \
+            /usr/local/share/powershell /usr/share/swift || true
+          df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install vLLM (precompiled, editable)
+        run: |
+          set -euxo pipefail
+          uv venv --python 3.12
+          source .venv/bin/activate
+          VLLM_USE_PRECOMPILED=1 uv pip install -e . --torch-backend=auto
+          python - <<'PY'
+          import vllm.multimodal.hasher as h
+          assert h.__file__.startswith("/home/runner/work/vllm/vllm/"), h.__file__
+          print("editable install tracks the working tree: OK")
+          PY
+
+      - name: Stash the bench scripts outside the worktree
+        run: |
+          set -euxo pipefail
+          mkdir -p "$RUNNER_TEMP/bench"
+          cp .github/bench/bench_mm_stages.py "$RUNNER_TEMP/bench/"
+          cp .github/bench/compare_mm_stages.py "$RUNNER_TEMP/bench/"
+
+      - name: Run interleaved A/B repeats
+        run: |
+          set -uo pipefail
+          source .venv/bin/activate
+          git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          OUT="$GITHUB_WORKSPACE/bench-mm-stages.txt"
+          : > "$OUT"
+
+          # The branch carries a merge of upstream/main, so its second parent
+          # IS the main the fix sits on top of. Using it as the baseline means
+          # the only difference between the two sides is the branch's own diff.
+          BRANCH_SHA=$(git rev-parse "origin/$BENCH_BRANCH")
+          BASE_SHA=$(git rev-parse "origin/$BENCH_BRANCH^2")
+          {
+            echo "branch   = $BRANCH_SHA ($BENCH_BRANCH)"
+            echo "baseline = $BASE_SHA (second parent of the branch merge)"
+          } | tee -a "$OUT"
+
+          for i in $(seq 0 "$REPEATS"); do
+            if [ $((i % 2)) -eq 0 ]; then
+              order="main $BENCH_BRANCH"
+            else
+              order="$BENCH_BRANCH main"
+            fi
+            for ref in $order; do
+              if [ "$ref" = "main" ]; then
+                target="$BASE_SHA"
+              else
+                target="$BRANCH_SHA"
+              fi
+              git checkout -f -q "$target"
+              tag=$(echo "$ref" | tr / _)
+              {
+                echo ""
+                echo "=========== repeat $i :: $ref ==========="
+                echo "HEAD = $(git rev-parse --short HEAD)  ($(git log -1 --pretty=%s))"
+              } | tee -a "$OUT"
+              python "$RUNNER_TEMP/bench/bench_mm_stages.py" \
+                "$RUNNER_TEMP/bench/$tag.r$i.json" 2>&1 | tee -a "$OUT"
+            done
+          done
+
+          git checkout -f -q origin/ci/test-runner
+          python "$RUNNER_TEMP/bench/compare_mm_stages.py" \
+            "$RUNNER_TEMP/bench" "$BENCH_BRANCH" 2>&1 | tee -a "$OUT"
+          exit 0
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench-mm-stages
+          path: bench-mm-stages.txt
+          if-no-files-found: warn

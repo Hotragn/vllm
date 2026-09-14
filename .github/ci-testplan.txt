@@ -15,13 +15,21 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
+# ACTIVE 2026-09-14, PR 54283 -- the PR was 791 commits behind main and
+# upstream had changed both hasher.py (#53675) and get_mm_hashes itself
+# (#54241 media_io_kwargs, #54918 modality scoping), so re-verify that the
+# collisions still exist on current main after merging it in.
+fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
+
 # ACTIVE 2026-09-14 -- post-merge re-verification. Both PRs had drifted far
 # behind main (54527 by 51 commits, 54548 by 343) and Mergify cannot update a
 # fork branch, so main was merged in locally. Upstream had itself modified
 # files these PRs touch, so a clean textual merge is not sufficient evidence:
 # re-run the real tests on the merged heads.
-fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak or images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing | main
-fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+# VERIFIED (run 34807068302) 2026-09-14 on the merged heads.
+# fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak or images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing | main
+# VERIFIED (run 34807068302) 2026-09-14 on the merged heads.
+# fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
 
 # ACTIVE, PR 54527 -- @claude round 4: an images_kwargs override must not shrink
 # the shared size upper bound that the video budget and dummy data also read.
