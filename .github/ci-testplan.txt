@@ -28,7 +28,10 @@
 # processor kwargs under a fixed `mm_processor_kwargs` key, so assert the collision
 # shapes through ProcessorInputs.get_mm_hashes, not just on the hasher. Both
 # ProcessorInputs and random_image exist on main, so this file is valid for BEFORE.
-fix/mm-hash-framing | tests/multimodal/test_processing.py | vllm/multimodal/hasher.py | test_processor_inputs_hashes_distinguish_kwargs_shapes | - | main
+# VERIFIED (run 34875720302) on 4774d04485 vs main 435c96f9d: BEFORE all 5 cases
+# fail with literally equal digests; AFTER whole file 17f/86p, the 17 identical to
+# main's own uninspectable-LlavaNext set.
+# fix/mm-hash-framing | tests/multimodal/test_processing.py | vllm/multimodal/hasher.py | test_processor_inputs_hashes_distinguish_kwargs_shapes | - | main
 
 # ACTIVE 2026-09-14 -- post-merge re-verification. Both PRs had drifted far
 # behind main (54527 by 51 commits, 54548 by 343) and Mergify cannot update a

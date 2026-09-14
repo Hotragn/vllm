@@ -9,10 +9,10 @@ name: fork-bench-mm-stages
 # The A/B order alternates and repeat 0 is discarded, because this runner is
 # measurably faster on its first workload.
 
+# Evidence banked 2026-09-14 (run 34873264755). Manual trigger only so a plan
+# push does not spend ~40 min re-running it.
 on:
-  push:
-    branches:
-      - ci/test-runner
+  workflow_dispatch:
 
 env:
   BENCH_BRANCH: fix/mm-hash-framing
@@ -70,7 +70,11 @@ jobs:
           # IS the main the fix sits on top of. Using it as the baseline means
           # the only difference between the two sides is the branch's own diff.
           BRANCH_SHA=$(git rev-parse "origin/$BENCH_BRANCH")
-          BASE_SHA=$(git rev-parse "origin/$BENCH_BRANCH^2")
+          # Prefer the merge commit's second parent (= the main the fix sits on),
+          # but that only exists while the branch tip IS the merge. Fall back to
+          # the merge base once a plain commit lands on top.
+          BASE_SHA=$(git rev-parse -q --verify "origin/$BENCH_BRANCH^2" \
+            || git merge-base origin/main "origin/$BENCH_BRANCH")
           {
             echo "branch   = $BRANCH_SHA ($BENCH_BRANCH)"
             echo "baseline = $BASE_SHA (second parent of the branch merge)"
