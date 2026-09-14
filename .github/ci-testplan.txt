@@ -15,6 +15,14 @@
 # on main and on the branch so unrelated environment failures are visible as
 # identical on both sides.
 
+# ACTIVE 2026-09-14 -- post-merge re-verification. Both PRs had drifted far
+# behind main (54527 by 51 commits, 54548 by 343) and Mergify cannot update a
+# fork branch, so main was merged in locally. Upstream had itself modified
+# files these PRs touch, so a clean textual merge is not sufficient evidence:
+# re-run the real tests on the merged heads.
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak or images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing | main
+fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+
 # ACTIVE, PR 54527 -- @claude round 4: an images_kwargs override must not shrink
 # the shared size upper bound that the video budget and dummy data also read.
 # BEFORE runs against a0c5180d8c (the previous branch head), not main: modality
@@ -22,7 +30,8 @@
 # Verified (run 34091035237): BEFORE ((700, 700), 95) == ((2184, 2184), 24).
 # Re-running post-rebase onto 869f78732b (the branch was rebased 2026-09-07 to
 # drop 8 unrelated upstream files that a stray commit had swept in).
-# Verified (run 34183531905), PR 54527 open:
+# Verified (run 34183531905), PR 54527 open:
+
 # fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing/test_glm4_1v.py | fix/modality-scoped-mm-kwargs-vl~2
 
 # Verified (run 34000087312), PR 54527 open -- per-request mm_processor_kwargs:
@@ -40,13 +49,15 @@
 # ACTIVE, PR 54548 -- re-verify after the rebase onto main: upstream moved
 # _extract_mm_features into token_in_token_out/mm_features.py, so the fix and
 # the rebuild helper moved with it.
-# Verified (run 34183531905), PR 54548 open:
+# Verified (run 34183531905), PR 54548 open:
+
 # fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed | tests/entrypoints/scale_out/token_in_token_out
 
 # ACTIVE, PR 54548 -- CodeRabbit round 1: a client-supplied is_embed shorter than
 # the span must be rejected. BEFORE runs against the previous branch head, where
 # is_embed exists but is unvalidated.
-# Verified (run 34183531905), PR 54548 open:
+# Verified (run 34183531905), PR 54548 open:
+
 # fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/protocol.py | placeholder_rejects_a_mask_shorter_than_the_span | - | fix/render-features-is-embed~1
 
 # Verified and reported upstream (PR 54548):
