@@ -120,3 +120,10 @@
 # Verified (run 34710923235): BEFORE AssertionError 'video decoder reached with
 # undecodable base64'; AFTER 39 passed; suite 158 vs 164 passed, 0 failed both sides.
 # fix/video-base64-validate | tests/multimodal/media/test_video.py | vllm/multimodal/media/video.py | test_load_base64_rejects_malformed | tests/multimodal/media | main
+
+# ACTIVE 2026-09-16 -- PR 54527 was reported mergeable=false/dirty by GitHub while
+# a local trial merge was clean, and it was 137 behind. Merged main in (head
+# b3706a5ea5); GitHub then flipped to mergeable=true. The merge auto-merged four
+# of the PR's own model files (glm4_1v, idefics3, keye, lfm2_vl), so re-run the
+# real tests rather than trusting a clean textual merge.
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak or images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing | main
