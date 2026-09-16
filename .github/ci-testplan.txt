@@ -127,3 +127,16 @@
 # of the PR's own model files (glm4_1v, idefics3, keye, lfm2_vl), so re-run the
 # real tests rather than trusting a clean textual merge.
 fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak or images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing | main
+
+# ACTIVE 2026-09-16, PRs 54527 and 54283 -- both had gone CONFLICTING against
+# current main and the resolutions were not mechanical:
+#  * 54527: upstream restructured the Transformers backend (_apply_hf_processor_main,
+#    HFMultiModalInputs) and moved Qwen2.5-Omni's video size synthesis into
+#    _get_hf_mm_inputs, so every hunk was re-derived on the new shapes.
+#  * 54283: upstream #56576 replaced the inline EXIF read with
+#    _get_image_id_bytes, which returned the id UNFRAMED; the resolution keeps
+#    their tolerance and frames the result.
+# Re-run the real tests on the merged heads before reporting either as fixed.
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_token_count or request_mm_processor_kwargs_reach_the_token_count | tests/models/multimodal/processing | main
+# (glm4_1v row omitted here: the ACTIVE row above already covers it, with a suite diff.)
+fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
