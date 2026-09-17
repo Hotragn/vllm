@@ -22,6 +22,7 @@
 # VERIFIED (run 34873264781) on 0d949f8e5c: BEFORE 6 failed / 1 passed with
 # byte-identical digests; AFTER 25 passed. Suite tests/multimodal: main 23f/547p
 # vs branch 23f/554p, the 23 identical on both sides (uninspectable models).
+# retired 2026-09-17: verified, run 35262753719 (molmo2 1f->6p; is_embed 2f->22p, suite main 40p/0f vs branch 56p/0f)
 # fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
 
 # ACTIVE 2026-09-14, PR 54283 -- the reachability row. #54918 nested the request's
@@ -150,7 +151,7 @@
 # for that model the fix only moved the failure later. The test loads a FRESH
 # image per case on purpose: Pillow raises only on the first read of the poisoned
 # lazy EXIF state (measured on 12.3.0), so reusing one image would pass on main.
-fix/molmo2-exif-tolerance | tests/models/multimodal/processing/test_molmo2.py | vllm/model_executor/models/molmo2.py | exif_transpose_tolerates_malformed_exif | tests/models/multimodal/processing | main
+# fix/molmo2-exif-tolerance | tests/models/multimodal/processing/test_molmo2.py | vllm/model_executor/models/molmo2.py | exif_transpose_tolerates_malformed_exif | tests/models/multimodal/processing | main
 
 # ACTIVE 2026-09-17 -- both PRs went CONFLICTING again and were resolved by hand.
 # 54527: one-line import union in the Transformers backend (branch added Callable,
@@ -159,9 +160,9 @@ fix/molmo2-exif-tolerance | tests/models/multimodal/processing/test_molmo2.py | 
 # `placeholder_ranges_from_engine_input` that drops `is_embed`; resolution keeps
 # their refactor and moves this branch's `is_embed` into it. Must be re-tested.
 # Verified (run 35261096734): 54527 BEFORE 2 failed -> AFTER 18 passed. Retired.
-fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+# fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
 
 # ACTIVE 2026-09-17b -- re-run 54548 after fixing the 4 suite failures the first
 # run exposed (upstream's new expected-dict literals lacked is_embed). The
 # targeted file was green both times; only the whole-suite diff caught it.
-fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+# fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
