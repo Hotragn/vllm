@@ -39,7 +39,7 @@
 # files these PRs touch, so a clean textual merge is not sufficient evidence:
 # re-run the real tests on the merged heads.
 # VERIFIED (run 34807068302) 2026-09-14 on the merged heads.
-# fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak or images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing | main
+# # Verified (run 35261096734): 54527 BEFORE 2 failed -> AFTER 18 passed. Retired.
 # VERIFIED (run 34807068302) 2026-09-14 on the merged heads.
 # fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
 
@@ -127,7 +127,7 @@
 # of the PR's own model files (glm4_1v, idefics3, keye, lfm2_vl), so re-run the
 # real tests rather than trusting a clean textual merge.
 # VERIFIED (run 35142164659) on a2d23a55a1: BEFORE assert 47040000 == 469762048 and assert 9633792 == 1003520; AFTER 18 passed.
-# fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak or images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing | main
+# # Verified (run 35261096734): 54527 BEFORE 2 failed -> AFTER 18 passed. Retired.
 
 # ACTIVE 2026-09-16, PRs 54527 and 54283 -- both had gone CONFLICTING against
 # current main and the resolutions were not mechanical:
@@ -158,5 +158,10 @@ fix/molmo2-exif-tolerance | tests/models/multimodal/processing/test_molmo2.py | 
 # 54548: SEMANTIC -- upstream hoisted the placeholder build into a new helper
 # `placeholder_ranges_from_engine_input` that drops `is_embed`; resolution keeps
 # their refactor and moves this branch's `is_embed` into it. Must be re-tested.
-fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | videos_kwargs_max_pixels_does_not_leak or images_kwargs_max_pixels_does_not_leak_into_video_budget | tests/models/multimodal/processing | main
+# Verified (run 35261096734): 54527 BEFORE 2 failed -> AFTER 18 passed. Retired.
+fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+
+# ACTIVE 2026-09-17b -- re-run 54548 after fixing the 4 suite failures the first
+# run exposed (upstream's new expected-dict literals lacked is_embed). The
+# targeted file was green both times; only the whole-suite diff caught it.
 fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
