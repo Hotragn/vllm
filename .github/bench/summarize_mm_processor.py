@@ -88,6 +88,26 @@ for stage in ("get_mm_hashes_ms", "preprocessor_total_ms"):
             f"a delta smaller than this is not resolvable by this harness."
         )
 
+print()
+# A percentage delta is misleading when the two sides' samples interleave. State
+# the raw ranges and the absolute shift, which do not depend on which repeat
+# happened to be fastest.
+for stage in ("get_mm_hashes_ms", "preprocessor_total_ms"):
+    if stage not in stages:
+        continue
+    m, b = sorted(vals("main", stage, "mean")), sorted(vals("branch", stage, "mean"))
+    overlap = b[0] <= m[-1] and m[0] <= b[-1]
+    print(
+        f"{stage}: main {m[0]:.4f}..{m[-1]:.4f}  branch {b[0]:.4f}..{b[-1]:.4f}  "
+        f"(absolute shift of the minima {b[0] - m[0]:+.4f} ms/request)"
+    )
+    verdict = (
+        "OVERLAP, so the sides are not separated by this harness"
+        if overlap
+        else "are DISJOINT"
+    )
+    print(f"  -> ranges {verdict}")
+
 e2e = {s: [r["mean_e2el_ms"] for r in runs[s] if "mean_e2el_ms" in r] for s in SIDES}
 if e2e["main"] and e2e["branch"]:
     print(

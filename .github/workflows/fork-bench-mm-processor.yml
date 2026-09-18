@@ -35,12 +35,12 @@ env:
   # The smoke step always runs, so it stays a fast gate on the full run.
   SMOKE_ONLY: "false"
   MODEL: HuggingFaceTB/SmolVLM-256M-Instruct
-  # Small on purpose. `encoder_forward` costs ~154 s/request on this runner and
-  # is the one stage that genuinely wants a GPU -- and the one this PR does not
-  # touch. Hashing is ~0.2% of preprocessing, so the claim does not need a big
-  # sample; it needs a clean one. 2x(1 warmup + 2 measured) x 4 prompts fits.
-  REPEATS: "2"
-  NUM_PROMPTS: "4"
+  # Sized from the first full run: one invocation is ~240 s (fp32 cut the CPU
+  # encoder from 154 s to ~39 s/request), so 5 measured repeats fit comfortably.
+  # 2 repeats left the hashing delta inside main's own spread, which is exactly
+  # the case where more repeats -- not more prompts -- buys resolution.
+  REPEATS: "5"
+  NUM_PROMPTS: "6"
   # float32, not bfloat16: this runner has no AMX/avx512-bf16, so bf16 is
   # emulated and the vision tower crawls.
   DTYPE: float32
