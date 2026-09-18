@@ -32,18 +32,22 @@ on:
 
 env:
   # Flip to "false" and push to run the full A/B; "true" stops after the probe.
-  SMOKE_ONLY: "true"
+  # The smoke step always runs, so it stays a fast gate on the full run.
+  SMOKE_ONLY: "false"
   MODEL: HuggingFaceTB/SmolVLM-256M-Instruct
-  REPEATS: "3"
-  NUM_PROMPTS: "8"
+  # Small on purpose. `encoder_forward` costs ~154 s/request on this runner and
+  # is the one stage that genuinely wants a GPU -- and the one this PR does not
+  # touch. Hashing is ~0.2% of preprocessing, so the claim does not need a big
+  # sample; it needs a clean one. 2x(1 warmup + 2 measured) x 4 prompts fits.
+  REPEATS: "2"
+  NUM_PROMPTS: "4"
   # float32, not bfloat16: this runner has no AMX/avx512-bf16, so bf16 is
-  # emulated and the vision tower crawls (154 s/request in the first probe).
+  # emulated and the vision tower crawls.
   DTYPE: float32
-  # Idefics3 splits each image into tiles + a global view, which multiplies the
-  # ENCODER cost. Hashing runs on the raw input image before the HF processor,
-  # so switching splitting off cuts the cost this PR does not touch and leaves
-  # the stage it does touch untouched. Applied identically to both sides.
-  MM_KWARGS: '{"do_image_splitting": false}'
+  # NOTE: do_image_splitting=false would cut the irrelevant encoder cost, but it
+  # trips a real vLLM bug in Idefics3 -- "cannot reshape tensor of 0 elements
+  # into shape [0, -1]" at idefics3.py:630. Not this PR's business, so the
+  # encoder stays expensive and the sample stays small instead.
   # PR #54283 branch head and its merge-base with upstream/main.
   BRANCH_HEAD: 3da5f95ccd72399a9892be3c258bc7f95678766e
   BASE: 30b847c1fa5461a590606cbc9b8dae4a490c6cdd
@@ -211,7 +215,6 @@ jobs:
             --model "$MODEL" --dtype "$DTYPE" \
             --max-model-len 2048 --enforce-eager \
             --max-num-seqs 1 --max-num-batched-tokens 2048 \
-            --mm-processor-kwargs "$MM_KWARGS" \
             --dataset-name random-mm --num-prompts 1 --num-warmups 0 \
             --random-input-len 64 --random-output-len 1 \
             --random-mm-base-items-per-request 2 \
@@ -253,7 +256,6 @@ jobs:
                   --model "$MODEL" --dtype "$DTYPE" \
                   --max-model-len 2048 --enforce-eager \
                   --max-num-seqs 1 --max-num-batched-tokens 2048 \
-                  --mm-processor-kwargs "$MM_KWARGS" \
                   --dataset-name random-mm \
                   --num-prompts "$NUM_PROMPTS" --num-warmups 1 \
                   --random-input-len 64 --random-output-len 1 \
