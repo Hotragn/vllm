@@ -166,3 +166,13 @@
 # run exposed (upstream's new expected-dict literals lacked is_embed). The
 # targeted file was green both times; only the whole-suite diff caught it.
 # fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+
+# ACTIVE 2026-09-18, PR 54283 -- Buildkite 89811 ran on the STALE head 3da5f95ccd
+# via `/ci run --allow-stale` (117 behind) and went red on 12 params of
+# test_nixl_connector_hma.py::test_region_pull_ignores_allocation_padding
+# (AttributeError: no attribute '_transfer_layer_group_ids'), which upstream had
+# already fixed in #57211 (24a63b3340, one line in the test fixture) -- not in
+# that tree. Branch is now merged up to 23e26e0588 (head 1be08a9a5b, 0 behind).
+# Re-verify the PR's own tests against current main before asking for a rerun.
+fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
+fix/mm-hash-framing | tests/multimodal/test_processing.py | vllm/multimodal/hasher.py | test_processor_inputs_hashes_distinguish_kwargs_shapes | - | main
