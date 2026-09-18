@@ -174,5 +174,9 @@
 # already fixed in #57211 (24a63b3340, one line in the test fixture) -- not in
 # that tree. Branch is now merged up to 23e26e0588 (head 1be08a9a5b, 0 behind).
 # Re-verify the PR's own tests against current main before asking for a rerun.
-fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
-fix/mm-hash-framing | tests/multimodal/test_processing.py | vllm/multimodal/hasher.py | test_processor_inputs_hashes_distinguish_kwargs_shapes | - | main
+# VERIFIED (run 35383271022) on 1be08a9a5b vs main 23e26e0588:
+#   hasher     BEFORE 6 failed / 1 passed (literal digest equality) -> AFTER 26 passed
+#   processing BEFORE 5 failed -> AFTER 103 passed
+#   suite tests/multimodal: main 577p/8s/0f vs branch 589p/8s/0f (+12 = this PR's own tests)
+# fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
+# fix/mm-hash-framing | tests/multimodal/test_processing.py | vllm/multimodal/hasher.py | test_processor_inputs_hashes_distinguish_kwargs_shapes | - | main
