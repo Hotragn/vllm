@@ -98,6 +98,11 @@ jobs:
             --extra-index-url https://wheels.vllm.ai/nightly/cpu \
             --index-strategy first-index --torch-backend cpu
           uv pip install pandas datasets
+          # Import from OUTSIDE the checkout: the repo root contains a `vllm/`
+          # package and `python -c` puts cwd first on sys.path, so importing here
+          # would silently pick up the SOURCE TREE instead of the wheel -- mixing
+          # source Python with the wheel's compiled extensions.
+          cd "$RUNNER_TEMP"
           python -c "import vllm; print('vllm', vllm.__version__)"
 
       - name: Locate the swap target inside site-packages
@@ -105,11 +110,21 @@ jobs:
           set -euo pipefail
           source "$RUNNER_TEMP/venv/bin/activate"
           # The wheel is NOT editable, so the swap target is the installed copy.
-          # Everything below is meaningless if this path is wrong, so resolve it
-          # from the imported module rather than guessing.
-          INSTALLED=$(python -c 'import vllm.multimodal.hasher as h; print(h.__file__)')
+          # Resolve it from the imported module rather than guessing -- but from
+          # $RUNNER_TEMP, not the checkout (see the note in the install step).
+          # vLLM logs to stdout on import, so tag the line and filter for it.
+          INSTALLED=$(cd "$RUNNER_TEMP" && python -c \
+            'import vllm.multimodal.hasher as h; print("HASHER_PATH=" + h.__file__)' \
+            | sed -n 's/^HASHER_PATH=//p' | tail -1)
           echo "installed hasher: $INSTALLED"
           test -f "$INSTALLED"
+          # HARD GUARD: the whole method rests on swapping the file that vllm
+          # actually imports. If this resolves into the workspace, the wheel is
+          # being shadowed by the checkout and every number would be meaningless.
+          case "$INSTALLED" in
+            "$RUNNER_TEMP"/venv/*) echo "resolves into the venv: OK" ;;
+            *) echo "::error::hasher resolved to '$INSTALLED', outside the venv"; exit 1 ;;
+          esac
           echo "INSTALLED_HASHER=$INSTALLED" >> "$GITHUB_ENV"
           # Intel OpenMP must be preloaded for the CPU wheel.
           IOMP=$(find "$RUNNER_TEMP/venv" -name 'libiomp5.so' | head -1 || true)
@@ -146,6 +161,9 @@ jobs:
           set -euo pipefail
           source "$RUNNER_TEMP/venv/bin/activate"
           cp -f "$OUT/hasher.main.py" "$INSTALLED_HASHER"
+          # Everything below must run outside the checkout so the wheel, not the
+          # source tree, is what gets imported and benchmarked.
+          cd "$RUNNER_TEMP"
           python -c "
           from vllm.multimodal.hasher import MultiModalHasher
           print('BASE hasher imports and runs:', MultiModalHasher.hash_kwargs(x=b'ab')[:16])
@@ -171,6 +189,8 @@ jobs:
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/venv/bin/activate"
+          # Outside the checkout, so the wheel is what runs (see the install step).
+          cd "$RUNNER_TEMP"
 
           run_side() {  # run_side <main|branch> <repeat>
             local side=$1 rep=$2 json="$OUT/${1}.r${2}.json"
