@@ -160,14 +160,35 @@ jobs:
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/venv/bin/activate"
-          cp -f "$OUT/hasher.main.py" "$INSTALLED_HASHER"
           # Everything below must run outside the checkout so the wheel, not the
           # source tree, is what gets imported and benchmarked.
           cd "$RUNNER_TEMP"
-          python -c "
-          from vllm.multimodal.hasher import MultiModalHasher
-          print('BASE hasher imports and runs:', MultiModalHasher.hash_kwargs(x=b'ab')[:16])
-          "
+
+          # Is the file swap actually LIVE? Use the PR's own headline collision:
+          # {"ab": "c"} and {"a": "bc"} both flatten to b"ab" + b"c" on main and
+          # must separate on the branch. If these two probes agree, the swap is a
+          # no-op and every timing below would be measuring one revision twice.
+          swap() {
+            cp -f "$OUT/hasher.$1.py" "$INSTALLED_HASHER"
+            find "$(dirname "$INSTALLED_HASHER")" -name '__pycache__' -type d \
+              -prune -exec rm -rf {} + 2>/dev/null || true
+          }
+          probe() {
+            python -c "
+          from vllm.multimodal.hasher import MultiModalHasher as H
+          a = H.hash_kwargs('blake3', **{'ab': 'c'})
+          b = H.hash_kwargs('blake3', **{'a': 'bc'})
+          print('PROBE=' + ('EQUAL' if a == b else 'DIFFER'))
+          " | sed -n 's/^PROBE=//p' | tail -1
+          }
+          swap main;   base_probe=$(probe)
+          swap branch; branch_probe=$(probe)
+          echo "collision probe:  base=$base_probe  branch=$branch_probe"
+          if [ "$base_probe" != "EQUAL" ] || [ "$branch_probe" != "DIFFER" ]; then
+            echo "::error::file swap is not live (expected base=EQUAL branch=DIFFER)"
+            exit 1
+          fi
+          swap main
           set -x
           vllm bench mm-processor \
             --model "$MODEL" --dtype "$DTYPE" \
