@@ -157,6 +157,12 @@ jobs:
         env:
           VLLM_CPU_KVCACHE_SPACE: "4"
           VLLM_LOGGING_LEVEL: INFO
+          # A CPU forward is far slower than the 300 s default RPC budget, and
+          # the multiproc executor turns that into "RPC call to execute_model
+          # timed out". Run the engine core in-process so there is no RPC at
+          # all, and raise the budget anyway.
+          VLLM_ENABLE_V1_MULTIPROCESSING: "0"
+          VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS: "1800"
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/venv/bin/activate"
@@ -190,16 +196,21 @@ jobs:
           fi
           swap main
           set -x
-          vllm bench mm-processor \
+          # Deliberately tiny: this step answers "does it run at all", and a
+          # CPU forward is slow enough that the real workload belongs in the
+          # benchmark step. One decode token is enough -- the preprocessing
+          # stats this PR is about are recorded during prefill either way.
+          timeout 1500 vllm bench mm-processor \
             --model "$MODEL" --dtype "$DTYPE" \
-            --max-model-len 4096 --enforce-eager \
-            --dataset-name random-mm --num-prompts 2 --num-warmups 1 \
-            --random-input-len 300 --random-output-len 8 \
-            --random-mm-base-items-per-request 2 \
-            --random-mm-limit-mm-per-prompt '{"image": 3, "video": 0}' \
+            --max-model-len 2048 --enforce-eager \
+            --max-num-seqs 1 --max-num-batched-tokens 2048 \
+            --dataset-name random-mm --num-prompts 1 --num-warmups 0 \
+            --random-input-len 64 --random-output-len 1 \
+            --random-mm-base-items-per-request 1 \
+            --random-mm-limit-mm-per-prompt '{"image": 2, "video": 0}' \
             --random-mm-bucket-config '{(256, 256, 1): 1.0}' \
             --seed 0 --disable-tqdm --metric-percentiles 50,99 \
-            --output-json "$OUT/smoke.json" 2>&1 | tail -40
+            --output-json "$OUT/smoke.json" 2>&1 | tail -60
           echo "--- smoke.json ---"
           cat "$OUT/smoke.json"
 
@@ -207,6 +218,8 @@ jobs:
         if: ${{ env.SMOKE_ONLY != 'true' }}
         env:
           VLLM_CPU_KVCACHE_SPACE: "4"
+          VLLM_ENABLE_V1_MULTIPROCESSING: "0"
+          VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS: "1800"
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/venv/bin/activate"
@@ -223,18 +236,24 @@ jobs:
             # both sides hash byte-identical media. Two images per request is
             # deliberate: the framing applies to sequence and mapping containers,
             # which a single item would barely exercise.
-            if vllm bench mm-processor \
+            local t0=$SECONDS
+            # Two images per request is deliberate: the framing applies to
+            # sequence and mapping containers, which one item barely exercises.
+            # Output length is 1 -- decode is pure CPU cost that adds nothing to
+            # the preprocessing stats this PR is about.
+            if timeout 2400 vllm bench mm-processor \
                   --model "$MODEL" --dtype "$DTYPE" \
-                  --max-model-len 4096 --enforce-eager \
+                  --max-model-len 2048 --enforce-eager \
+                  --max-num-seqs 1 --max-num-batched-tokens 2048 \
                   --dataset-name random-mm \
-                  --num-prompts "$NUM_PROMPTS" --num-warmups 2 \
-                  --random-input-len 300 --random-output-len 40 \
+                  --num-prompts "$NUM_PROMPTS" --num-warmups 1 \
+                  --random-input-len 64 --random-output-len 1 \
                   --random-mm-base-items-per-request 2 \
                   --random-mm-limit-mm-per-prompt '{"image": 3, "video": 0}' \
                   --random-mm-bucket-config '{(256, 256, 1): 0.7, (720, 1280, 1): 0.3}' \
                   --seed 0 --disable-tqdm --metric-percentiles 50,99 \
                   --output-json "$json" > "$OUT/${side}.r${rep}.log" 2>&1; then
-              echo "ok"
+              echo "ok ($((SECONDS - t0))s)"
             else
               echo "ERROR"
               tail -30 "$OUT/${side}.r${rep}.log" >&2
