@@ -18,27 +18,25 @@ name: fork-bench-mm-processor
 # ALTERNATE which side runs first, --seed is fixed, and the summary prints a
 # noise floor (main against itself) plus a same-work check.
 
+# workflow_dispatch only registers from the default branch, and this file must
+# stay OFF the fork's main (it would leak into every PR diff). So it is driven by
+# pushing this branch, restricted to this workflow's own paths so an unrelated
+# test-plan push does not spend an hour here.
 on:
-  workflow_dispatch:
-    inputs:
-      smoke_only:
-        description: "Install + one tiny bench run, then stop (feasibility probe)"
-        type: boolean
-        default: true
-      model:
-        description: "Multi-modal model to serve"
-        default: "HuggingFaceTB/SmolVLM-256M-Instruct"
-      repeats:
-        description: "Measured repeats per side (plus 1 discarded warmup)"
-        default: "3"
-      num_prompts:
-        description: "Requests per bench invocation"
-        default: "16"
-      dtype:
-        description: "auto | bfloat16 | float32"
-        default: "bfloat16"
+  push:
+    branches:
+      - ci/test-runner
+    paths:
+      - .github/workflows/fork-bench-mm-processor.yml
+      - .github/bench/summarize_mm_processor.py
 
 env:
+  # Flip to "false" and push to run the full A/B; "true" stops after the probe.
+  SMOKE_ONLY: "true"
+  MODEL: HuggingFaceTB/SmolVLM-256M-Instruct
+  REPEATS: "3"
+  NUM_PROMPTS: "16"
+  DTYPE: bfloat16
   # PR #54283 branch head and its merge-base with upstream/main.
   BRANCH_HEAD: 3da5f95ccd72399a9892be3c258bc7f95678766e
   BASE: 30b847c1fa5461a590606cbc9b8dae4a490c6cdd
@@ -154,7 +152,7 @@ jobs:
           "
           set -x
           vllm bench mm-processor \
-            --model "${{ inputs.model }}" --dtype "${{ inputs.dtype }}" \
+            --model "$MODEL" --dtype "$DTYPE" \
             --max-model-len 4096 --enforce-eager \
             --dataset-name random-mm --num-prompts 2 --num-warmups 1 \
             --random-input-len 300 --random-output-len 8 \
@@ -167,13 +165,12 @@ jobs:
           cat "$OUT/smoke.json"
 
       - name: Benchmark -- 1 discarded warmup + N measured repeats, alternating order
-        if: ${{ !inputs.smoke_only }}
+        if: ${{ env.SMOKE_ONLY != 'true' }}
         env:
           VLLM_CPU_KVCACHE_SPACE: "4"
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/venv/bin/activate"
-          REPEATS="${{ inputs.repeats }}"
 
           run_side() {  # run_side <main|branch> <repeat>
             local side=$1 rep=$2 json="$OUT/${1}.r${2}.json"
@@ -186,10 +183,10 @@ jobs:
             # deliberate: the framing applies to sequence and mapping containers,
             # which a single item would barely exercise.
             if vllm bench mm-processor \
-                  --model "${{ inputs.model }}" --dtype "${{ inputs.dtype }}" \
+                  --model "$MODEL" --dtype "$DTYPE" \
                   --max-model-len 4096 --enforce-eager \
                   --dataset-name random-mm \
-                  --num-prompts "${{ inputs.num_prompts }}" --num-warmups 2 \
+                  --num-prompts "$NUM_PROMPTS" --num-warmups 2 \
                   --random-input-len 300 --random-output-len 40 \
                   --random-mm-base-items-per-request 2 \
                   --random-mm-limit-mm-per-prompt '{"image": 3, "video": 0}' \
@@ -212,11 +209,7 @@ jobs:
           done
 
       - name: Summary
-        if: ${{ !inputs.smoke_only }}
-        env:
-          REPEATS: ${{ inputs.repeats }}
-          MODEL: ${{ inputs.model }}
-          NUM_PROMPTS: ${{ inputs.num_prompts }}
+        if: ${{ env.SMOKE_ONLY != 'true' }}
         run: |
           set -euo pipefail
           source "$RUNNER_TEMP/venv/bin/activate"
