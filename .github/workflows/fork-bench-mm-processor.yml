@@ -213,8 +213,8 @@ jobs:
           # stats this PR is about are recorded during prefill either way.
           timeout 1500 vllm bench mm-processor \
             --model "$MODEL" --dtype "$DTYPE" \
-            --max-model-len 2048 --enforce-eager \
-            --max-num-seqs 1 --max-num-batched-tokens 2048 \
+            --max-model-len 8192 --enforce-eager \
+            --max-num-seqs 1 --max-num-batched-tokens 8192 \
             --dataset-name random-mm --num-prompts 1 --num-warmups 0 \
             --random-input-len 64 --random-output-len 1 \
             --random-mm-base-items-per-request 2 \
@@ -254,8 +254,8 @@ jobs:
             # the preprocessing stats this PR is about.
             if timeout 2400 vllm bench mm-processor \
                   --model "$MODEL" --dtype "$DTYPE" \
-                  --max-model-len 2048 --enforce-eager \
-                  --max-num-seqs 1 --max-num-batched-tokens 2048 \
+                  --max-model-len 8192 --enforce-eager \
+                  --max-num-seqs 1 --max-num-batched-tokens 8192 \
                   --dataset-name random-mm \
                   --num-prompts "$NUM_PROMPTS" --num-warmups 1 \
                   --random-input-len 64 --random-output-len 1 \
