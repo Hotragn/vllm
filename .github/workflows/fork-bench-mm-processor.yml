@@ -33,7 +33,9 @@ on:
 env:
   # Flip to "false" and push to run the full A/B; "true" stops after the probe.
   # The smoke step always runs, so it stays a fast gate on the full run.
-  SMOKE_ONLY: "false"
+  # Left at "true" on purpose: evidence is banked (run 35315243142). Flip to
+  # "false" only when you actually want another ~78 min A/B.
+  SMOKE_ONLY: "true"
   MODEL: HuggingFaceTB/SmolVLM-256M-Instruct
   # Sized from the first full run: one invocation is ~240 s (fp32 cut the CPU
   # encoder from 154 s to ~39 s/request), so 5 measured repeats fit comfortably.
