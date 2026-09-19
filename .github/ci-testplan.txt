@@ -180,3 +180,11 @@
 #   suite tests/multimodal: main 577p/8s/0f vs branch 589p/8s/0f (+12 = this PR's own tests)
 # fix/mm-hash-framing | tests/multimodal/test_hasher.py | vllm/multimodal/hasher.py | collision_kwargs_key_value_boundary or collision_nested_vs_flattened_key or collision_sequence_vs_mapping or collision_none_vs_empty or collision_empty_container_vs_omitted | tests/multimodal | main
 # fix/mm-hash-framing | tests/multimodal/test_processing.py | vllm/multimodal/hasher.py | test_processor_inputs_hashes_distinguish_kwargs_shapes | - | main
+
+# ACTIVE 2026-09-18 -- both branches merged current main again. 54548 matters:
+# #57520 (removal of assistant_tokens_mask) landed and touched BOTH
+# token_in_token_out/protocol.py and serving.py, the same files this PR edits.
+# Text merge was clean and the is_embed field/validator/both directions were
+# checked by hand, but yesterday proved a clean merge is not evidence.
+fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+fix/molmo2-exif-tolerance | tests/models/multimodal/processing/test_molmo2.py | vllm/model_executor/models/molmo2.py | exif | tests/models/multimodal/processing | main
