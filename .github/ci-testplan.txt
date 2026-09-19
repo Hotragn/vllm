@@ -186,5 +186,15 @@
 # token_in_token_out/protocol.py and serving.py, the same files this PR edits.
 # Text merge was clean and the is_embed field/validator/both directions were
 # checked by hand, but yesterday proved a clean merge is not evidence.
-fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
-fix/molmo2-exif-tolerance | tests/models/multimodal/processing/test_molmo2.py | vllm/model_executor/models/molmo2.py | exif | tests/models/multimodal/processing | main
+# RETIRED 2026-09-19 (verified, run 35412632747 success): 54548 after
+# merging main incl. #57520. Suite token_in_token_out green both sides.
+# fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+# RETIRED 2026-09-19: OBSOLETE. DarkLight1337 asked for the test to be
+# removed; #57234 now ships the 2-line source fix only, no test to run.
+# fix/molmo2-exif-tolerance | tests/models/multimodal/processing/test_molmo2.py | vllm/model_executor/models/molmo2.py | exif | tests/models/multimodal/processing | main
+
+# 2026-09-19: DynamicVideoBackend fps cap (branch fix/dynamic-video-fps-cap).
+# Headline test asserts the candidate-walk length via a math.ceil counter, not
+# the output -- the returned indices are fps-invariant, so an output-length
+# assertion would pass on main. Both tests use only symbols that exist on main.
+fix/dynamic-video-fps-cap | tests/multimodal/test_video.py | vllm/multimodal/video.py | TestDynamicVideoBackendFpsCap | tests/multimodal | main
