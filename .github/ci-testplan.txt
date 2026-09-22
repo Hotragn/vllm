@@ -201,3 +201,10 @@
 # (assert 10000000 <= 3000 / == 3000), 1 passed. AFTER whole file 87 passed.
 # Suite tests/multimodal: main 589p/0f vs branch 592p/0f (+3 = this PR).
 # fix/dynamic-video-fps-cap | tests/multimodal/test_video.py | vllm/multimodal/video.py | TestDynamicVideoBackendFpsCap | tests/multimodal | main
+
+# ACTIVE 2026-09-22 -- all three open PRs were brought level with main (54527 was
+# 152 behind because mergify stopped updating it on 09-18). Re-verify 54548 and
+# 57717 on the new heads. 57717 BEFORE must go red on the math.ceil counter, not
+# on an output-length assertion -- the indices are fps-invariant.
+fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+fix/dynamic-video-fps-cap | tests/multimodal/test_video.py | vllm/multimodal/video.py | DynamicVideoBackendFpsCap | - | main
