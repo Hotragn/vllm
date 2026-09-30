@@ -206,5 +206,13 @@
 # 152 behind because mergify stopped updating it on 09-18). Re-verify 54548 and
 # 57717 on the new heads. 57717 BEFORE must go red on the math.ceil counter, not
 # on an output-length assertion -- the indices are fps-invariant.
-fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
-fix/dynamic-video-fps-cap | tests/multimodal/test_video.py | vllm/multimodal/video.py | DynamicVideoBackendFpsCap | - | main
+# RETIRED 2026-09-30 (verified 09-22): fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
+# RETIRED 2026-09-30 (verified 09-22): fix/dynamic-video-fps-cap | tests/multimodal/test_video.py | vllm/multimodal/video.py | DynamicVideoBackendFpsCap | - | main
+
+# ACTIVE 2026-09-30, PR 54527 -- upstream #56372 (295a0b8d64) REMOVED the
+# `modality=` argument of get_merged_mm_kwargs and now drops flat duplicates of
+# scoped keys. A plain merge turns all 17 call sites into TypeErrors. Branch
+# test/mm-kwargs-port = main merged in + reads ported to get_modality_mm_kwargs.
+# BEFORE on main (a3af78384a) must go red on the scoped values; AFTER whole file.
+test/mm-kwargs-port | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | leak | tests/multimodal | main
+test/mm-kwargs-port | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_token_count or request_mm_processor_kwargs_reach_the_token_count | tests/models/multimodal/processing | main
