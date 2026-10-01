@@ -216,3 +216,7 @@
 # BEFORE on main (a3af78384a) must go red on the scoped values; AFTER whole file.
 # VERIFIED (run 36673566847): test/mm-kwargs-port | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | leak | tests/multimodal | main
 # VERIFIED (run 36673566847): test/mm-kwargs-port | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_token_count or request_mm_processor_kwargs_reach_the_token_count | tests/models/multimodal/processing | main
+
+# ACTIVE 2026-10-01, PR 54527 -- review round: helper inlined to a direct
+# get_allowed_kwarg_only_overrides call; test probe now uses create_processor.
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_token_count or request_mm_processor_kwargs_reach_the_token_count | - | a3af78384a1f14f4769f8fa2c64c7ced5216b2ae
