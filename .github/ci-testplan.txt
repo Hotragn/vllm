@@ -226,4 +226,5 @@
 # passing request kwargs there leaks into later requests. Fix drops request
 # kwargs from the counts. BEFORE = the current PR head 7cf21648d2 (which passes
 # them) and must go red on the leak assertion; AFTER whole file.
-test/54527-no-request-kwargs | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | request_mm_processor_kwargs_do_not_leak_into_later_requests or scoped_images_kwargs_reach_the_token_count | - | 7cf21648d223a83242a25384f5743fdd21ad0fbe
+# VERIFIED (run 36936685492): BEFORE assert [3872] == [2144]; AFTER 20p/1xf/3 gated-401. Retired.
+# test/54527-no-request-kwargs | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | request_mm_processor_kwargs_do_not_leak_into_later_requests or scoped_images_kwargs_reach_the_token_count | - | 7cf21648d223a83242a25384f5743fdd21ad0fbe
