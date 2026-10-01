@@ -220,3 +220,10 @@
 # ACTIVE 2026-10-01, PR 54527 -- review round: helper inlined to a direct
 # get_allowed_kwarg_only_overrides call; test probe now uses create_processor.
 # VERIFIED (run 36823193389, AFTER only -- BEFORE incidental: helper sig not on main): fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_token_count or request_mm_processor_kwargs_reach_the_token_count | - | a3af78384a1f14f4769f8fa2c64c7ced5216b2ae
+
+# ACTIVE 2026-10-01b, PR 54527 -- hmellor: llava_next/idefics3/aria/... update
+# their class-level images_kwargs defaults inside _get_num_multimodal_tokens, so
+# passing request kwargs there leaks into later requests. Fix drops request
+# kwargs from the counts. BEFORE = the current PR head 7cf21648d2 (which passes
+# them) and must go red on the leak assertion; AFTER whole file.
+test/54527-no-request-kwargs | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | request_mm_processor_kwargs_do_not_leak_into_later_requests or scoped_images_kwargs_reach_the_token_count | - | 7cf21648d223a83242a25384f5743fdd21ad0fbe
