@@ -228,3 +228,7 @@
 # them) and must go red on the leak assertion; AFTER whole file.
 # VERIFIED (run 36936685492): BEFORE assert [3872] == [2144]; AFTER 20p/1xf/3 gated-401. Retired.
 # test/54527-no-request-kwargs | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | request_mm_processor_kwargs_do_not_leak_into_later_requests or scoped_images_kwargs_reach_the_token_count | - | 7cf21648d223a83242a25384f5743fdd21ad0fbe
+# 2026-10-02: #54527 after merging #59762 (LegacyMultiModalProcessor removed).
+# The scoped-kwargs test now targets _get_num_patches_per_image via SmolVLM with
+# images_kwargs.do_image_splitting=False. BEFORE = upstream main (merge's 2nd parent).
+test/54527-merge59762 | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_patch_count | tests/models/multimodal/processing | test/54527-merge59762^2
