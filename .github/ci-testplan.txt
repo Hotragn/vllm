@@ -233,3 +233,7 @@
 # images_kwargs.do_image_splitting=False. BEFORE = upstream main (merge's 2nd parent).
 # VERIFIED (run 37102414155): BEFORE ValueError [13, 13] rows; AFTER pass, 2 gated-401; suite 602/607. Retired.
 # test/54527-merge59762 | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_patch_count | tests/multimodal | test/54527-merge59762~1^2
+# 2026-10-03: #54527 per-modality get_image_size_with_most_features (DarkLight1337 r4172092169).
+# BEFORE on main and on the previous head 94e70e8a2d (unscoped modality=None bound).
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | size_bound_follows_the_modality_being_sized | tests/multimodal | main
+fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | size_bound_follows_the_modality_being_sized | - | 94e70e8a2d021ee59efc932b91cc12b214b1744b
