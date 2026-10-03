@@ -237,3 +237,5 @@
 # BEFORE on main and on the previous head 94e70e8a2d (unscoped modality=None bound).
 fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | size_bound_follows_the_modality_being_sized | tests/multimodal | main
 fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_glm4_1v.py | vllm/model_executor/models/glm4_1v.py | size_bound_follows_the_modality_being_sized | - | 94e70e8a2d021ee59efc932b91cc12b214b1744b
+# 2026-10-03: #54548 after merging main (bc21cba967 added OutputMode above PlaceholderRangeInfo; kept is_embed).
+fix/render-features-is-embed | tests/entrypoints/scale_out/token_in_token_out/test_mm_serde.py | vllm/entrypoints/scale_out/token_in_token_out/mm_features.py | render_features_preserve_is_embed or placeholder_rejects_a_mask_shorter_than_the_span | tests/entrypoints/scale_out/token_in_token_out | main
