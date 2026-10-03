@@ -231,4 +231,5 @@
 # 2026-10-02: #54527 after merging #59762 (LegacyMultiModalProcessor removed).
 # The scoped-kwargs test now targets _get_num_patches_per_image via SmolVLM with
 # images_kwargs.do_image_splitting=False. BEFORE = upstream main (merge's 2nd parent).
-test/54527-merge59762 | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_patch_count | tests/multimodal | test/54527-merge59762~1^2
+# VERIFIED (run 37102414155): BEFORE ValueError [13, 13] rows; AFTER pass, 2 gated-401; suite 602/607. Retired.
+# test/54527-merge59762 | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_patch_count | tests/multimodal | test/54527-merge59762~1^2
