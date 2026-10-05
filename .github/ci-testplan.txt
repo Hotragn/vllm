@@ -246,4 +246,9 @@
 # nested keyword the count ignores and the memory profile used the stock crop
 # count. Its sibling _get_num_patches_per_image already resolved the scope.
 # BEFORE on main must show the scoped form != the flat form.
+# fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_profiled_token_budget | tests/models/multimodal/processing | main
+
+# 2026-10-05: re-run after merging #57441, which moved the count into the
+# shared _get_num_mm_tokens (images + videos) reading raw mm_processor_kwargs.
+# BEFORE is the new upstream main (post-#57441).
 fix/modality-scoped-mm-kwargs-vl | tests/models/multimodal/processing/test_transformers_image.py | vllm/model_executor/models/transformers/multimodal.py | scoped_images_kwargs_reach_the_profiled_token_budget | tests/models/multimodal/processing | main
